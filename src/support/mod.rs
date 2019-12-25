@@ -1,6 +1,7 @@
+use crate::ui::State;
 use gfx::Device;
 use glutin::{Event, WindowEvent};
-use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Ui};
+use imgui::{Context, Ui};
 use imgui_gfx_renderer::{Renderer, Shaders};
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
 use std::time::Instant;
@@ -22,6 +23,7 @@ pub fn init(title: &str) -> System {
         .with_dimensions(glutin::dpi::LogicalSize::new(1024f64, 768f64));
 
     let mut imgui = Context::create();
+    imgui.style_mut().window_rounding = 0.0;
     imgui.set_ini_filename(None);
 
     let mut platform = WinitPlatform::init(&mut imgui);
@@ -44,7 +46,11 @@ pub fn init(title: &str) -> System {
 }
 
 impl System {
-    pub fn main_loop<F: FnMut(&mut bool, &mut Ui)>(self, mut run_ui: F) {
+    pub fn main_loop<F: FnMut(&mut bool, &mut Ui, &mut State)>(
+        self,
+        mut run_ui: F,
+        mut state: State,
+    ) {
         let System {
             mut events_loop,
             mut imgui,
@@ -58,6 +64,7 @@ impl System {
         let mut last_frame = Instant::now();
         let mut run = true;
         while run {
+            run = !state.quit();
             events_loop.poll_events(|event| {
                 platform.handle_event(imgui.io_mut(), render_sys.window(), &event);
                 if let Event::WindowEvent { event, .. } = event {
@@ -75,7 +82,7 @@ impl System {
 
             last_frame = io.update_delta_time(last_frame);
             let mut ui = imgui.frame();
-            run_ui(&mut run, &mut ui);
+            run_ui(&mut run, &mut ui, &mut state);
 
             if let Some(main_color) = render_sys.main_color.as_mut() {
                 encoder.clear(main_color, [1.0, 1.0, 1.0, 1.0]);
