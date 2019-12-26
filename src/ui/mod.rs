@@ -1,11 +1,12 @@
 use crate::support;
-use imgui::{im_str, ComboBox, Condition, ImString, MenuItem, Ui, Window, WindowFlags};
-
+use imgui::{im_str, sys, ComboBox, Condition, ImString, MenuItem, Ui, Window, WindowFlags};
+use std::ffi::CString;
 #[derive(Default, Debug)]
 pub struct State {
     show_provider_form: bool,
     show_navigator: bool,
     selected_provider: usize,
+    selected_provider_old: usize,
     quit: bool,
     quits: bool,
     key: ImString,
@@ -20,6 +21,7 @@ impl State {
             show_provider_form: true,
             show_navigator: false,
             selected_provider: 0,
+            selected_provider_old: 0,
             quit: false,
             quits: false,
             key: ImString::with_capacity(256),
@@ -68,6 +70,13 @@ fn show_provider_form<'a>(ui: &Ui<'a>, state: &mut State) {
         &mut state.selected_provider,
         &[im_str!("AWS"), im_str!("ssss")],
     );
+    if state.selected_provider != state.selected_provider_old {
+        state.selected_provider_old = state.selected_provider;
+        state.key.clear();
+        state.key_secret.clear();
+        state.bucket.clear();
+        state.region.clear();
+    }
     match state.selected_provider {
         0 => {
             ui.input_text(im_str!("Access Key"), &mut state.key).build();
@@ -85,6 +94,10 @@ fn show_provider_form<'a>(ui: &Ui<'a>, state: &mut State) {
             ui.input_text(im_str!("GBucket"), &mut state.bucket).build();
         }
         _ => {}
+    }
+
+    if ui.button(im_str!("Connect"), [120.0, 0.0]) {
+        state.show_provider_form = false;
     }
 }
 
